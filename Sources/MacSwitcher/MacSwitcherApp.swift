@@ -7,8 +7,10 @@ struct MacSwitcherApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("MacSwitcher", systemImage: "keyboard") {
+        MenuBarExtra {
             MenuContent(model: appDelegate.model, openSettings: appDelegate.showSettings)
+        } label: {
+            Image(nsImage: AppIcon.menuBar)
         }
     }
 }
@@ -59,6 +61,7 @@ struct MenuContent: View {
             Text("⚠️ \(error)")
         }
         Divider()
+        Button("О MacSwitcher") { About.showPanel() }
         Button("Настройки…") { openSettings() }
             .keyboardShortcut(",")
         Divider()
