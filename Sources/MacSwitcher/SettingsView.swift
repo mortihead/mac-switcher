@@ -43,6 +43,8 @@ struct SettingsView: View {
                     Button("Открыть Системные настройки") { Accessibility.openSystemSettings() }
                 }
             }
+
+            AboutSection()
         }
         .formStyle(.grouped)
         .frame(width: 460)
