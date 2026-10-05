@@ -49,9 +49,10 @@ struct MenuContent: View {
     let openSettings: @MainActor () -> Void
 
     var body: some View {
-        Button("Перевести выделенный текст") {
+        Button("Сменить раскладку выделенного текста") {
             model.convertSelection()
         }
+        Text("\(model.shortcut.displayString): последнее слово или выделение")
         if !model.isAccessibilityTrusted {
             Button("⚠️ Нужен доступ в «Универсальный доступ»…") {
                 model.requestAccessibility()
