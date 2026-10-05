@@ -31,6 +31,17 @@ struct Shortcut: Codable, Equatable {
         modifiers.contains(.command) || modifiers.contains(.control) || KeyboardLayouts.isStandaloneKey(keyCode)
     }
 
+    /// Совпадает ли нажатие из CGEvent с этим сочетанием.
+    func matches(keyCode: UInt32, eventFlags: CGEventFlags) -> Bool {
+        guard keyCode == self.keyCode else { return false }
+        var pressed: NSEvent.ModifierFlags = []
+        if eventFlags.contains(.maskCommand) { pressed.insert(.command) }
+        if eventFlags.contains(.maskAlternate) { pressed.insert(.option) }
+        if eventFlags.contains(.maskControl) { pressed.insert(.control) }
+        if eventFlags.contains(.maskShift) { pressed.insert(.shift) }
+        return pressed == modifiers
+    }
+
     var displayString: String {
         var result = ""
         if modifiers.contains(.control) { result += "⌃" }

@@ -12,7 +12,7 @@ struct SettingsView: View {
                 if let error = model.hotKeyError {
                     Text(error).foregroundStyle(.red).font(.callout)
                 }
-                Text("Выделите текст в любом приложении и нажмите сочетание: «ghbdtn» станет «привет», «руддщ» станет «hello».")
+                Text("Нажмите сочетание сразу после набора: последнее слово переведётся, \"ghbdtn\" станет \"привет\". Повторное нажатие вернёт как было. Чтобы перевести больше, выделите текст и нажмите сочетание.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

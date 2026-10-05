@@ -2,13 +2,40 @@ import AppKit
 import Carbon
 import LayoutCore
 
-/// Переводит выделенный текст в активном приложении.
+/// Переводит выделенный или только что набранный текст в активном приложении.
 ///
 /// Универсального способа прочитать выделение во всех программах нет, поэтому делаем как Punto Switcher:
 /// копируем выделение (⌘C), переводим, вставляем обратно (⌘V) и восстанавливаем прежний буфер обмена.
+/// Набранный текст берётся из `TypingMonitor`, стирается нажатиями ⌫ и печатается заново.
 @MainActor
 final class SelectionConverter {
     private var isRunning = false
+
+    /// Заменяет только что набранный `typed` (он стоит прямо перед курсором) на перевод.
+    /// - Returns: перевод или `nil`, если переводить нечего.
+    func convertTyped(_ typed: String, switchLayout: Bool) async -> String? {
+        guard !isRunning else { return nil }
+        isRunning = true
+        defer { isRunning = false }
+
+        let converter = KeyboardLayouts.makeConverter()
+        let direction = converter.detectDirection(typed)
+        let converted = converter.convert(typed, direction: direction)
+        guard converted != typed else {
+            NSSound.beep()
+            return nil
+        }
+
+        // С зажатым ⌘ или ⌥ клавиша ⌫ удалила бы строку или слово целиком.
+        await waitForModifierKeysRelease()
+
+        KeyboardEvents.press(CGKeyCode(kVK_Delete), flags: [], count: typed.count)
+        KeyboardEvents.type(converted)
+        if switchLayout {
+            KeyboardLayouts.select(for: direction)
+        }
+        return converted
+    }
 
     func convertSelection(switchLayout: Bool) async {
         guard !isRunning else { return }
@@ -110,12 +137,37 @@ private struct PasteboardSnapshot {
 
 /// Имитация нажатий клавиш. Требует разрешения «Универсальный доступ».
 enum KeyboardEvents {
-    static func press(_ keyCode: CGKeyCode, flags: CGEventFlags) {
-        let source = CGEventSource(stateID: .hidSystemState)
-        for keyDown in [true, false] {
-            guard let event = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) else { continue }
-            event.flags = flags
-            event.post(tap: .cghidEventTap)
+    /// Метка в `eventSourceUserData`, по которой `TypingMonitor` отличает свои события от нажатий пользователя.
+    static let marker: Int64 = 0x4D53_5754 // 'MSWT'
+
+    static func press(_ keyCode: CGKeyCode, flags: CGEventFlags, count: Int = 1) {
+        let source = makeSource()
+        for _ in 0..<count {
+            for keyDown in [true, false] {
+                guard let event = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: keyDown) else { continue }
+                event.flags = flags
+                event.post(tap: .cghidEventTap)
+            }
         }
+    }
+
+    /// Печатает текст независимо от текущей раскладки: символы передаются в событии напрямую.
+    static func type(_ text: String) {
+        let source = makeSource()
+        for character in text {
+            let utf16 = Array(String(character).utf16)
+            for keyDown in [true, false] {
+                guard let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: keyDown) else { continue }
+                event.flags = []
+                event.keyboardSetUnicodeString(stringLength: utf16.count, unicodeString: utf16)
+                event.post(tap: .cghidEventTap)
+            }
+        }
+    }
+
+    private static func makeSource() -> CGEventSource? {
+        let source = CGEventSource(stateID: .hidSystemState)
+        source?.userData = marker
+        return source
     }
 }

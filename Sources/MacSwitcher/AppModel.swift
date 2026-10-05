@@ -9,6 +9,7 @@ final class AppModel: ObservableObject {
             if let data = try? JSONEncoder().encode(shortcut) {
                 defaults.set(data, forKey: Keys.shortcut)
             }
+            typingMonitor.ignoredShortcut = shortcut
             registerHotKey()
         }
     }
@@ -30,6 +31,7 @@ final class AppModel: ObservableObject {
     private let defaults = UserDefaults.standard
     private let hotKeys = HotKeyManager()
     private let selectionConverter = SelectionConverter()
+    private let typingMonitor = TypingMonitor()
     private var isHotKeySuspended = false
     private var accessibilityPolling: Task<Void, Never>?
 
@@ -43,7 +45,10 @@ final class AppModel: ObservableObject {
         switchLayoutAfterConversion = defaults.object(forKey: Keys.switchLayout) as? Bool ?? true
         launchAtLogin = SMAppService.mainApp.status == .enabled
 
-        hotKeys.onPress = { [weak self] in self?.convertSelection() }
+        typingMonitor.ignoredShortcut = shortcut
+        if isAccessibilityTrusted { typingMonitor.start() }
+
+        hotKeys.onPress = { [weak self] in self?.convertFromHotKey() }
         registerHotKey()
 
         // Разрешение выдаётся в Системных настройках, пока приложение работает, поэтому проверяем его периодически.
@@ -51,6 +56,25 @@ final class AppModel: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 self?.refreshAccessibility()
+            }
+        }
+    }
+
+    /// По горячей клавише: если только что что-то набрано, переводим последнее слово, иначе выделение.
+    func convertFromHotKey() {
+        refreshAccessibility()
+        guard isAccessibilityTrusted else {
+            requestAccessibility()
+            return
+        }
+        guard let typed = typingMonitor.buffer.lastWord else {
+            convertSelection()
+            return
+        }
+        let switchLayout = switchLayoutAfterConversion
+        Task {
+            if let converted = await selectionConverter.convertTyped(typed, switchLayout: switchLayout) {
+                typingMonitor.replaceLastWord(with: converted)
             }
         }
     }
@@ -72,6 +96,7 @@ final class AppModel: ObservableObject {
     func refreshAccessibility() {
         let trusted = Accessibility.isTrusted(prompt: false)
         if trusted != isAccessibilityTrusted { isAccessibilityTrusted = trusted }
+        if trusted && !typingMonitor.isRunning { typingMonitor.start() }
     }
 
     /// Пока пользователь записывает новое сочетание, старое не должно срабатывать.
