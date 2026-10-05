@@ -8,6 +8,11 @@
 # сборка подписывается им, иначе ad-hoc ("-"). С постоянным сертификатом macOS не сбрасывает
 # разрешение «Универсальный доступ» после каждой пересборки. Сертификат можно задать и явно:
 #   SIGN_IDENTITY="Apple Development: you@example.com (TEAMID)" ./scripts/build-app.sh
+#
+# Для релиза (так собирает GitHub Actions):
+#   VERSION=1.2.0 BUILD_NUMBER=7 UNIVERSAL=1 ./scripts/build-app.sh
+# VERSION и BUILD_NUMBER записываются в Info.plist (CFBundleShortVersionString и CFBundleVersion),
+# UNIVERSAL=1 собирает один бинарник для Apple Silicon и Intel.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -23,13 +28,23 @@ if [[ -z "${SIGN_IDENTITY:-}" ]]; then
 fi
 APP="build/MacSwitcher.app"
 
-swift build -c "$CONFIG"
-BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
+BUILD_ARGS=(-c "$CONFIG")
+if [[ "${UNIVERSAL:-0}" == "1" ]]; then
+    BUILD_ARGS+=(--arch arm64 --arch x86_64)
+fi
+swift build "${BUILD_ARGS[@]}"
+BIN_DIR="$(swift build "${BUILD_ARGS[@]}" --show-bin-path)"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/MacSwitcher" "$APP/Contents/MacOS/MacSwitcher"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+if [[ -n "${VERSION:-}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
+fi
+if [[ -n "${BUILD_NUMBER:-}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist"
+fi
 
 codesign --force --sign "$SIGN_IDENTITY" "$APP"
 
