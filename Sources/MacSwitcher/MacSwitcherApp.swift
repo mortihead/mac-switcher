@@ -47,7 +47,7 @@ struct MenuContent: View {
     let openSettings: @MainActor () -> Void
 
     var body: some View {
-        Button("Перевести выделенный текст   \(model.shortcut.displayString)") {
+        Button("Перевести выделенный текст") {
             model.convertSelection()
         }
         if !model.isAccessibilityTrusted {
