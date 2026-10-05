@@ -26,9 +26,9 @@ struct Shortcut: Codable, Equatable {
         return UInt32(result)
     }
 
-    /// Нужен ⌘ или ⌃, иначе сочетание мешает обычному набору текста. F-клавиши можно без модификаторов.
+    /// Нужен ⌘ или ⌃, иначе сочетание мешает обычному набору текста. F-клавиши и § можно без модификаторов.
     var isValid: Bool {
-        modifiers.contains(.command) || modifiers.contains(.control) || KeyboardLayouts.isFunctionKey(keyCode)
+        modifiers.contains(.command) || modifiers.contains(.control) || KeyboardLayouts.isStandaloneKey(keyCode)
     }
 
     var displayString: String {

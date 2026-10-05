@@ -40,8 +40,10 @@ enum KeyboardLayouts {
         }
     }
 
-    static func isFunctionKey(_ keyCode: UInt32) -> Bool {
-        functionKeys.contains(Int(keyCode))
+    /// Клавиши, которые можно назначить без модификаторов: F1-F20 и клавиша слева от 1 (§ или `).
+    /// На ISO-клавиатурах macOS может отдавать для неё и kVK_ISO_Section, и kVK_ANSI_Grave, поэтому разрешены оба кода.
+    static func isStandaloneKey(_ keyCode: UInt32) -> Bool {
+        standaloneKeys.contains(Int(keyCode))
     }
 
     /// Название клавиши для отображения сочетания: «X», «Space», «F5».
@@ -99,13 +101,14 @@ enum KeyboardLayouts {
         }
     }
 
-    private static let functionKeys: Set<Int> = [
+    private static let standaloneKeys: Set<Int> = [
+        kVK_ISO_Section, kVK_ANSI_Grave,
         kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10,
         kVK_F11, kVK_F12, kVK_F13, kVK_F14, kVK_F15, kVK_F16, kVK_F17, kVK_F18, kVK_F19, kVK_F20,
     ]
 
     private static let specialKeyNames: [Int: String] = [
-        kVK_Space: "Space", kVK_Return: "↩", kVK_Tab: "⇥", kVK_Delete: "⌫", kVK_ForwardDelete: "⌦",
+        kVK_Space: "Space", kVK_ISO_Section: "§", kVK_Return: "↩", kVK_Tab: "⇥", kVK_Delete: "⌫", kVK_ForwardDelete: "⌦",
         kVK_Escape: "⎋", kVK_LeftArrow: "←", kVK_RightArrow: "→", kVK_UpArrow: "↑", kVK_DownArrow: "↓",
         kVK_Home: "↖", kVK_End: "↘", kVK_PageUp: "⇞", kVK_PageDown: "⇟",
         kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6",

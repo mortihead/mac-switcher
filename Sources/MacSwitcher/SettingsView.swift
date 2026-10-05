@@ -97,7 +97,7 @@ struct ShortcutRecorder: View {
                 model.shortcut = shortcut
                 stopRecording()
             } else {
-                hint = "Добавьте ⌘ или ⌃: сочетания только с ⌥ и ⇧ macOS не разрешает."
+                hint = "Добавьте ⌘ или ⌃: без них можно назначить только § и F1-F20."
             }
             return nil
         }
