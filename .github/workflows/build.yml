@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tests
+        run: swift test
+
+      - name: Build app
+        run: ./scripts/build-app.sh
+
+      - name: Zip app
+        run: ditto -c -k --keepParent build/MacSwitcher.app build/MacSwitcher.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MacSwitcher
+          path: build/MacSwitcher.zip
