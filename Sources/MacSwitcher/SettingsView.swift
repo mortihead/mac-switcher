@@ -12,14 +12,14 @@ struct SettingsView: View {
                 if let error = model.hotKeyError {
                     Text(error).foregroundStyle(.red).font(.callout)
                 }
-                Text("Нажмите сочетание сразу после набора: последнее слово переведётся, \"ghbdtn\" станет \"привет\". Повторное нажатие вернёт как было. Чтобы перевести больше, выделите текст и нажмите сочетание.")
+                Text("Нажмите сочетание сразу после набора, и раскладка последнего слова сменится: \"ghbdtn\" станет \"привет\". Повторное нажатие вернёт как было. Если выделить текст, сменится раскладка выделенного.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Section("Поведение") {
-                Toggle("Переключать раскладку после перевода", isOn: $model.switchLayoutAfterConversion)
+                Toggle("Переключать раскладку системы после исправления", isOn: $model.switchLayoutAfterConversion)
                 Toggle("Запускать при входе в систему", isOn: Binding(
                     get: { model.launchAtLogin },
                     set: { model.setLaunchAtLogin($0) }
