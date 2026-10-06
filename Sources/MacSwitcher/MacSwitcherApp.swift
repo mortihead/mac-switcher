@@ -62,7 +62,7 @@ struct MenuContent: View {
             Text("⚠️ \(error)")
         }
         Divider()
-        Button("О MacSwitcher") { About.showPanel() }
+        Button("О программе MacSwitcher…") { About.showPanel() }
         Button("Настройки…") { openSettings() }
             .keyboardShortcut(",")
         Divider()
