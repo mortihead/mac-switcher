@@ -13,6 +13,10 @@
 #   VERSION=1.2.0 BUILD_NUMBER=7 UNIVERSAL=1 ./scripts/build-app.sh
 # VERSION и BUILD_NUMBER записываются в Info.plist (CFBundleShortVersionString и CFBundleVersion),
 # UNIVERSAL=1 собирает один бинарник для Apple Silicon и Intel.
+# Без VERSION версия берётся из последнего git-тега v* (v0.1.0 -> 0.1.0), без BUILD_NUMBER номер
+# сборки равен числу коммитов. Apple требует в этих ключах только числа через точку, поэтому хэш
+# коммита (с пометкой -dirty при незакоммиченных изменениях) пишется в отдельный ключ MSGitCommit.
+# Если git недоступен, остаются значения из Resources/Info.plist.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -27,6 +31,15 @@ if [[ -z "${SIGN_IDENTITY:-}" ]]; then
     fi
 fi
 APP="build/MacSwitcher.app"
+
+if [[ -z "${VERSION:-}" ]]; then
+    VERSION="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+    VERSION="${VERSION#v}"
+fi
+if [[ -z "${BUILD_NUMBER:-}" ]]; then
+    BUILD_NUMBER="$(git rev-list --count HEAD 2>/dev/null || true)"
+fi
+GIT_COMMIT="$(git describe --always --dirty --abbrev=7 --exclude '*' 2>/dev/null || true)"
 
 BUILD_ARGS=(-c "$CONFIG")
 if [[ "${UNIVERSAL:-0}" == "1" ]]; then
@@ -45,8 +58,11 @@ fi
 if [[ -n "${BUILD_NUMBER:-}" ]]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist"
 fi
+if [[ -n "$GIT_COMMIT" ]]; then
+    /usr/libexec/PlistBuddy -c "Add :MSGitCommit string $GIT_COMMIT" "$APP/Contents/Info.plist"
+fi
 
 codesign --force --sign "$SIGN_IDENTITY" "$APP"
 
-echo "Готово: $APP (подпись: $SIGN_IDENTITY)"
+echo "Готово: $APP (версия: ${VERSION:-из Info.plist}, сборка: ${BUILD_NUMBER:-из Info.plist}, подпись: $SIGN_IDENTITY)"
 echo "Запуск: open $APP"

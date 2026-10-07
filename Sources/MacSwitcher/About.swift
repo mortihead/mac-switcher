@@ -10,6 +10,11 @@ enum About {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
 
+    /// Короткий хэш коммита, из которого собрано приложение (ключ MSGitCommit, его пишет build-app.sh).
+    static var gitCommit: String? {
+        Bundle.main.object(forInfoDictionaryKey: "MSGitCommit") as? String
+    }
+
     /// Стандартное окно "О программе" с описанием и ссылкой на GitHub.
     static func showPanel() {
         let paragraph = NSMutableParagraphStyle()
@@ -45,6 +50,9 @@ struct AboutSection: View {
                     .frame(width: 40, height: 40)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("MacSwitcher \(About.version)").font(.headline)
+                    if let commit = About.gitCommit {
+                        Text("Коммит \(commit)").font(.caption).foregroundStyle(.secondary)
+                    }
                     Text("Исправление раскладки QWERTY ⇄ ЙЦУКЕН").foregroundStyle(.secondary)
                 }
             }
